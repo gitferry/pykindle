@@ -3,39 +3,66 @@
 '''
 a simple program that can write a email to kindle and convert the pdf to kindle file
 '''
+import smtplib, sys, os
+from email.MIMEMultipart import MIMEMultipart
+from email.MIMEBase import MIMEBase
+from email.MIMEText import MIMEText
+from email.Utils import COMMASPACE, formatdate
+from email import Encoders
 
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-import smtplib
+class MyEmail(object):
+	"""my email class"""
+	def __init__(self, from_address, to_address, subject):
+		self.msg = MIMEMultipart()
+		self.msg['From'] = from_address
+		self.msg['To'] = to_address
+		self.msg['Date'] = formatdate(localtime=True)
+		self.msg['Subject'] = subject
 
-#创建一个带附件的实例
-msg = MIMEMultipart()
+		# print "Create email from %s to %s, subject is" % (from_address, to_address, subject)
 
-#构造附件1
-att1 = MIMEText(open('d:\\123.rar', 'rb').read(), 'base64', 'gb2312')
-att1["Content-Type"] = 'application/octet-stream'
-att1["Content-Disposition"] = 'attachment; filename="123.doc"'#这里的filename可以任意写，写什么名字，邮件中显示什么名字
-msg.attach(att1)
+	def wrap_attachment(self, files_list):
+		self.msg.attach(MIMEText(""))
 
-#构造附件2
-att2 = MIMEText(open('d:\\123.txt', 'rb').read(), 'base64', 'gb2312')
-att2["Content-Type"] = 'application/octet-stream'
-att2["Content-Disposition"] = 'attachment; filename="123.txt"'
-msg.attach(att2)
+		for f in files_list:
+			part = MIMEBase('application', "octet-stream")
+			part.set_payload( open(f,"rb").read() )
+			Encoders.encode_base64(part)
+			part.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(f))
+			self.msg.attach(part)
 
-#加邮件头
-msg['to'] = 'YYY@YYY.com'
-msg['from'] = 'XXX@XXX.com'
-msg['subject'] = 'hello world'
-#发送邮件
-try:
-    server = smtplib.SMTP()
-    server.connect('smtp.XXX.com')
-            server.login('XXX','XXXXX')#XXX为用户名，XXXXX为密码
-                server.sendmail(msg['from'], msg['to'],msg.as_string())
-                    server.quit()
-                        print '发送成功'
-                        except Exception, e:  
-                            print str(e)
-'''
-'''
+
+	def send_email(self, server, username, password):
+		try:
+			print '正在连接邮件服务器...'
+			server = smtplib.SMTP(server, timeout=30)
+			server.ehlo()
+			server.starttls()
+			server.login(username, password)
+			print '正在发送...'
+			server.sendmail(self.msg['From'], self.msg['To'], self.msg.as_string())
+			server.close()
+			print '发送成功'
+		except Exception, e:
+			print str(e)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
+        sys.stderr.write('USAGE: %s <stem>\n' % sys.argv[0])
+        sys.exit(1)
+    print 'send ', sys.argv[1]
+
+    from_address = 'greferry@gmail.com'
+    to_address = 'gaigai508@kindle.cn'
+    subject = 'convert'
+
+    newEmail = MyEmail(from_address=from_address, to_address=to_address, subject=subject)
+
+    server = "smtp.gmail.com:587"
+    username = "greferry"
+    password = "gaigaiforgoogle"
+
+    files = [sys.argv[1]]
+    newEmail.wrap_attachment(files)
+    newEmail.send_email(server, username, password)
