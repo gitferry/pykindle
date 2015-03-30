@@ -60,8 +60,8 @@ if __name__ == '__main__':
     newEmail = MyEmail(from_address=from_address, to_address=to_address, subject=subject)
 
     server = "smtp.gmail.com:587"
-    username = "greferry"
-    password = "gaigaiforgoogle"
+    username = ""
+    password = ""
 
     files = [sys.argv[1]]
     newEmail.wrap_attachment(files)
