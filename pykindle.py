@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 # coding=utf-8
+
+
 '''
 a simple program that can write a email to kindle and convert the pdf to kindle file
 '''
+
+
 import smtplib, sys, os
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEBase import MIMEBase
@@ -19,7 +23,7 @@ class MyEmail(object):
 		self.msg['Date'] = formatdate(localtime=True)
 		self.msg['Subject'] = subject
 
-		# print "Create email from %s to %s, subject is" % (from_address, to_address, subject)
+		print "Create email from '%s' to '%s', subject is '%s'" % (self.msg['From'], self.msg['To'], self.msg['Subject'])
 
 	def wrap_attachment(self, files_list):
 		self.msg.attach(MIMEText(""))
@@ -47,22 +51,55 @@ class MyEmail(object):
 			print str(e)
 
 
+def configure():
+    from_address = raw_input("What's your address?\n")
+    to_address = raw_input("Where to?\n")
+    subject = raw_input("what's the subject?\n")
+    username = raw_input("What's your user name?\n")
+    password = raw_input("Please input your password:\n")
+
+    context = "\n".join([from_address, to_address, subject, username, password])
+
+    f = open('config', 'w')
+
+    f.write(context)
+    f.close()
+
+
+def load_config():
+    try:
+        f = open('config', 'r')
+        contex = f.readlines()
+        from_address = contex[0]
+        to_address = contex[1]
+        subject = contex[2]
+        username = contex[3]
+        password = contex[4]
+
+        f.close()
+    except:
+        print "Please configure first."
+        sys.exit(1)
+
+    return  from_address, to_address, subject, username, password
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         sys.stderr.write('USAGE: %s <stem>\n' % sys.argv[0])
         sys.exit(1)
-    print 'send ', sys.argv[1]
 
-    from_address = 'greferry@gmail.com'
-    to_address = 'gaigai508@kindle.cn'
-    subject = 'convert'
+    if sys.argv[1] == '-c':
+        configure()
+    else:
+        print 'send ', sys.argv[1]
 
-    newEmail = MyEmail(from_address=from_address, to_address=to_address, subject=subject)
+        from_address, to_address, subject, username, password = load_config()
 
-    server = "smtp.gmail.com:587"
-    username = ""
-    password = ""
+        newEmail = MyEmail(from_address=from_address, to_address=to_address, subject=subject)
 
-    files = [sys.argv[1]]
-    newEmail.wrap_attachment(files)
-    newEmail.send_email(server, username, password)
+        server = "smtp.gmail.com:587"
+
+        files = [sys.argv[1]]
+        newEmail.wrap_attachment(files)
+        newEmail.send_email(server, username, password)
